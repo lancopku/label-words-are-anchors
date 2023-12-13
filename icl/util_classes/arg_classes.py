@@ -88,7 +88,7 @@ class CompressArgs(DeepArgs):
     save_folder: str = os.path.join(FOLDER_ROOT, 'results', 'compress')
 
 @dataclass
-class CompressTopArgs(CalSimilarityArgs):
+class CompressTopArgs(DeepArgs):
     ks_num: int = 20
     save_folder: str = os.path.join(FOLDER_ROOT, 'results', 'compress_top')
 
