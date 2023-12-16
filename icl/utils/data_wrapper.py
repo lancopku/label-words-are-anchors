@@ -95,7 +95,10 @@ def wrap_dataset_with_instruct(dataset: datasets.arrow_dataset.Dataset, instruct
     return dataset
 
 
+# you may add your tokenizer's name or local path (corresponding to tokenizer.name_or_path)
+# to this dict, and the corresponding model max length
 default_max_length_dict = {
+    'gpt2': 1024,
 }
 
 
