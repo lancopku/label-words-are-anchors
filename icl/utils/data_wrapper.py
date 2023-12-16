@@ -95,10 +95,27 @@ def wrap_dataset_with_instruct(dataset: datasets.arrow_dataset.Dataset, instruct
     return dataset
 
 
+default_max_length_dict = {
+}
+
+
+def get_max_length(tokenizer):
+    if tokenizer.name_or_path in default_max_length_dict:
+        return default_max_length_dict[tokenizer.name_or_path]
+    max_length = tokenizer.max_len_single_sentence
+    if max_length > 10000000:
+        max_length = tokenizer.model_max_length
+    if max_length > 10000000:
+        raise ValueError(
+            f"Your tokenizer has a very large `max_len_single_sentence` value: {max_length}, "
+            f"you may add this to tokenizer's config, or add it to `default_max_length_dict` above")
+    return max_length
+
+
 def tokenize_dataset(dataset, tokenizer):
     def tokenize_function(examples):
         return tokenizer(examples["sentence"], padding=True,
-                         max_length=tokenizer.max_len_single_sentence,
+                         max_length=get_max_length(tokenizer),
                          truncation=True,
                          return_tensors='pt')
 
