@@ -42,9 +42,12 @@ else:
 model, tokenizer = load_model_and_tokenizer(args)
 args.label_id_dict = get_label_id_dict_for_args(args, tokenizer)
 
+# model = model.half()
+
 model = LMForwardAPI(model=model, model_name=args.model_name, tokenizer=tokenizer,
                      device='cuda:0',
                      label_dict=args.label_dict)
+
 
 num_layer = get_model_layer_num(model=model.model, model_name=args.model_name)
 predictor = Predictor(label_id_dict=args.label_id_dict, pad_token_id=tokenizer.pad_token_id,
@@ -93,11 +96,14 @@ else:
     raise NotImplementedError(f"model_name: {args.model_name}")
 
 training_args = TrainingArguments("./output_dir", remove_unused_columns=False,
-                                  per_gpu_eval_batch_size=1,
-                                  per_gpu_train_batch_size=1)
+                                  per_device_eval_batch_size=1,
+                                  per_device_train_batch_size=1)
 trainer = Trainer(model=model, args=training_args)
 analysis_dataloader = trainer.get_eval_dataloader(demonstrations_contexted)
 
+
+for p in model.parameters():
+    p.requires_grad = False
 
 def get_proportion(saliency, class_poss, final_poss):
     saliency = saliency.detach().clone().cpu()
@@ -125,6 +131,7 @@ pros_list = []
 
 for idx, data in tqdm(enumerate(analysis_dataloader)):
     data = dict_to(data, model.device)
+    print(data['input_ids'].shape)
     attentionermanger.zero_grad()
     output = model(**data)
     label = data['labels']
@@ -132,7 +139,7 @@ for idx, data in tqdm(enumerate(analysis_dataloader)):
     loss.backward()
     class_poss, final_poss = predictor.get_pos({'input_ids': attentionermanger.input_ids})
     pros = []
-    for i in range(48):
+    for i in range(len(attentionermanger.attention_adapters)):
         saliency = attentionermanger.grad(use_abs=True)[i]
         pro = get_proportion(saliency, class_poss, final_poss)
         pros.append(pro)
